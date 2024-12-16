@@ -1,2 +1,0 @@
-# anxi software technical manulal
-
