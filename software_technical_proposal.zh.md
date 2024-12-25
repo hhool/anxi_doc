@@ -1,29 +1,463 @@
-# 软件架构说明书
+# 技术方案
 
-## 1. 简介
+## 1.1 概述
 
-超高周疲劳试验控制系统架构说明书用于描述软件的总体架构设计，包括软件的功能模块、组件、接口、数据结构等内容，是软件设计的重要文档之一。
+通过整合超声波发生器和静载机原厂设备数字化控制监测SDK，
+实现试验过程中各个阶段数据的连续性，数据一致性，及试验数据记录，报告生成等一系列自动化流程。
 
-帮助开发人员理解软件的设计思路和实现方法，为软件的开发、测试和维护提供参考。
+## 1.2 技术选型
 
-软件源码地址：[https://wwww.github.com/hhool/anxi](https://www.github.com/hhool/anxi)
+- 硬件平台:
 
-软件编译说明书：[https://github.com/hhool/anxi/blob/main/README.md](https://github.com/hhool/anxi/blob/main/README.md)
+    硬件环境：PC机，x86 x86_64, 串口设备，网络设备。
 
-## 2. 系统架构
+- 操作系统平台：
 
-软件的总体架构和主要组件。
+    系统平台：`Windows7+`
 
-### 2.1 架构运行环境
+- 软件平台：
 
-- 硬件环境：PC机，串口设备，网络设备。
-- 软件环境：Windows 7+ 操作系统，串口通信库，网络通信库。
-- 开发环境：Visual Studio 2015 +，C#，.NET Framework 3.5+。
-- 数据库环境：SQLite。
-- 通信协议：串口通信协议，RS485转USB2.0+，网络通信协议（TCP/IP)。
-- 界面设计：DuiLib。
+    开发语言：`C/C++`, `C#`
 
-### 2.2 架构设计
+    开发工具：`Visual Studio 2015`, `.NET Framework 3.5+`。
+
+    数据库：`sqlite3`
+
+    通信协议：串口通信协议，RS485转USB2.0+，网络通信协议（TCP/IP)。
+
+    SDK：超声波发生器SDK，静载机设备SDK。
+
+- 技术架构：
+
+    采用`MVC`架构模式，`Model`层负责数据存储，`View`层负责数据展示，`Controller`层负责数据控制。
+
+- 技术实现：
+
+    采用`C++`语言实现，`C#`语言实现。
+
+- 技术点：
+
+    串口通信协议，网络通信协议，数据存储，数据查询，数据导出，报告生成。
+
+## 1.3 技术架构
+
+系统功能模块划分如下：
+
+- 基础功能模块。
+- 试验设计功能模块。
+- 静载机设备功能模块。
+- 超声波发生器设备控制模块。
+- 试验数据文件管理模块。
+
+示意图如下：
+
+````mermaid
+graph TD
+    A[超声波发生器超高周疲劳试验控制系统] -->B[基础功能模块]
+    A -->C[试验设计功能模块]
+    A -->D[静载机设备功能模块]
+    A -->E[超声波发生器设备功能模块]
+    A -->F[试验数据文件管理功能模块]
+````
+
+### 1.3.1 基础功能模块
+
+#### 设备读写基础子模块
+
+静载机设备打开，关闭，参数设置，数据读取等功能。
+
+示意图如下：
+
+```mermaid
+graph TD
+    A[静载机] -->B[设置]
+    A -->C[打开]
+    A -->D[读写]
+    A -->E[关闭]
+```
+
+超声发生器设备打开，关闭，参数设置，数据读取等功能。
+
+示意图如下：
+
+```mermaid
+graph TD
+    A[超声波发生器] -->B[设置]
+    A -->C[打开]
+    A -->D[读写]
+    A -->E[关闭]
+```
+
+#### log日志子模块
+
+系统运行日志，设备日志，试验日志等功能。
+
+#### 数据存储子模块
+
+采用sqlite3数据库，
+试验数据存储，查询，导出，报告生成等功能。
+
+#### xml配置文件子模块
+
+xml格式存储系统配置文件，设备配置文件，试验配置文件等功能。
+
+#### 试验报告生成子模块
+
+采用word文档生成试验报告功能。采用word文档模板，填充试验数据，生成试验报告。
+使用`C#`技术栈实现。
+
+### 1.3.2 试验设计模块
+
+试验设计的修改，保存，读取。
+
+示意图如下：
+
+```mermaid
+graph LR
+    A[试验设计] -->|保存|B[存储]
+    B -->|读取|C[试验设计]
+```
+
+试验名称，基础参数，试验参数的配置读取和用户输入。
+
+试验设计的算法实现，通过算法结果为试验设备提供控制参数等功能。
+
+示意图如下：
+
+```mermaid
+graph LR
+    A[试验设计] -->|用户输入|B[试验参数设置]
+    B -->|试验设计算法|C[振幅]-->|振幅校准拟合函数|E[超声工作功率]
+```
+
+- 静载机设备控制模块
+
+静载机设备的位移控控制，力控制等功能。
+
+设备的位移控制，力控制，保载参数设置等功能系统持久化。
+
+示意图如下：
+
+```mermaid
+graph LR
+    A1[静载机] -->|位移控| B1[设置位移]
+    A1 -->|力控| C1[设置力]
+    A1 -->|保载| D1[设置保载]
+    B1 --> |保存| E1[存储]
+    C1 --> |保存| E1
+    D1 --> |保存| E1
+    E1 -->|读取| F1[位移值]
+    E1 -->|读取| G1[力值]
+    E1 -->|读取| H1[保载值]
+```
+
+位移控制，力控制，保载等设备动作交互信息，设备写入和读取，设备事件监控。
+
+示意图如下：
+
+```mermaid
+graph LR
+    A1[静载机] -->|位移控| B1[靠近试件]-->|力控| D1[到达预期力值] -->|保载| E1[力值保持]
+```
+
+- 超声波发生器设备控制模块
+
+间歇性设置，持续性设置，数据采集设置，数据表格记录设置，数据直方图展示设置等功能配置系统持久化。
+
+示意图如下：
+
+```mermaid
+graph LR
+    A2[超声波发生器] -->C2[试验验模式:间歇,持续设置]
+    A2 -->F2[数据采集设置]
+    A2 -->G2[数据表格记录设置]
+    A2 -->H2[数据直方图展示设置]
+    C2 -->|保存| I2[存储]
+    F2 -->|保存| I2
+    G2 -->|保存| I2
+    H2 -->|保存| I2
+    I2 -->|读取| K2[试验模式设置]
+    I2 -->|读取| N2[数据采集设置]
+    I2 -->|读取| O2[数据表格记录实设置]
+    I2 -->|读取| P2[数据直方图展示设置]
+```  
+
+试验进行前，超声波发生器的试验模式设置，模式加载。
+
+试验进行中，超声波发生器的实时监控，数据采集，数据表格和直方图展示。
+
+试验结束，数据记录文件cvs文件导出。
+
+示意图如下：
+
+```mermaid
+graph LR
+    A2[超声波发生器] -->|试验模式设置:间歇,持续| B2[模式加载]
+    B2 -->|试验实施| C2[数据采集]
+    C2 --> D2[数据表格]
+    D2 -->|停止试验| Y[数据导出]
+    C2 -->E2[数据直方图]
+```
+
+- 试验数据存储查询模块
+
+    试验数据存储查询模块主要负责试验数据cvs文件记录的存储，查询，导出，报告生成等功能。
+
+示意图如下：
+
+```mermaid
+graph LR
+    A3[试验数据存储] --> B3[数据查询]
+    B3 --> D3[数据导出]
+    D3 --> E3[报告生成]
+```
+
+## 1.4 技术实现
+
+### 1.4.1 基础模块
+
+- 设备读写基础子模块
+
+接口定义：
+
+```c++
+class DeviceComListener {
+public:
+    virtual void onOpen() = 0;
+    virtual void onClose() = 0;
+    virtual void onRead() = 0;
+    virtual void onWrite() = 0;
+};
+```
+
+```c++
+class DeviceNode {
+public:
+};
+```
+
+```c++
+class DeviceComInterface : public DeviceNode {
+public:
+    virtual bool open() = 0;
+    virtual bool close() = 0;
+    virtual bool read() = 0;
+    virtual bool write() = 0;
+    void setListener(DeviceComListener* listener);
+};
+```
+
+- log日志子模块
+
+接口定义：
+
+```c++
+class Log {
+public:
+    void log(const char* msg);
+};
+```
+
+- 数据存储子模块
+
+接口定义：
+
+```c++
+class DataStorage {
+public:
+    virtual int32_t open(const url) = 0;
+    virtual void query() = 0;
+    virtual void close() = 0;
+};
+```
+
+```c++
+class DataStorageImpl : public DataStorage {
+public:
+    int32_t open(const url) override;
+    void query() override;
+    void close() override;
+};
+```
+
+### 1.4.2 试验设计模块
+
+接口定义：
+
+```c++
+// @brief 试验设计头部
+// @brief The ExpDesignHeader struct
+// 试验设计头部 exp design header
+struct ExpDesignHeader {
+}
+```
+
+```c++
+// @brief 试验设计基础参数
+// 试验设计基础参数
+// 弹性模量、密度、应力最大值、应力比
+// 作为试验输入参数经过计算后得到设计参数结果
+// @brief The ExpDesignBaseParam struct
+// exp design base param
+// elastic modulus, density, max stress, stress ratio
+// as the input parameter of the experiment, the design
+// parameter result is obtained after calculation
+struct ExpDesignBaseParam {
+}
+```
+
+```c++
+// @brief 试验设计参数 作为试验设计的输入参数
+// @see kSolutionName_Axially_Symmetrical ...etc
+// @brief The ExpDesignParamAxially struct as the
+// input parameter of the experiment design
+// @see kSolutionName_Axially_Symmetrical ...etc
+struct ExpDesignParamAxially : public ExpDesignBaseParam {
+}
+```
+
+```c++
+// @brief 试验设计参数 作为试验设计的输入参数
+// @see kSolutionName_Stresses_Adjustable ...etc
+// @brief The ExpDesignParamStressesAdjustable struct as the
+// input parameter of the experiment design
+// @see kSolutionName_Stresses_Adjustable ...etc
+struct ExpDesignParamStressesAdjustable : public ExpDesignBaseParam {
+}
+```
+
+```c++
+// @brief 试验设计参数 作为试验设计的输入参数
+// @see kSolutionName_Th3point_Bending ...etc
+// @brief The ExpDesignParamTh3pointBending struct as the
+// input parameter of the experiment design
+// @see kSolutionName_Th3point_Bending ...etc
+struct ExpDesignParamTh3pointBending : public ExpDesignBaseParam {
+}
+```
+
+```c++
+// @brief 试验设计参数 作为试验设计的输入参数
+// @see kSolutionName_Vibration_Bending ...etc
+// @brief The ExpDesignParamVibrationBending struct as the
+// input parameter of the experiment design
+// @see kSolutionName_Vibration_Bending ...etc
+struct ExpDesignParamVibrationBending : public ExpDesignBaseParam {
+}
+```
+
+```c++
+// @brief 试验设计结果, 作为试验设计的输出参数
+// 基础结构体，用于扩展。
+// @brief The ExpDesignResult struct as the output
+// parameter of the experiment design. The basic structure
+// is used for extension.
+
+struct ExpDesignResult {
+}
+```
+
+```c++
+struct ExpDesignResult0 : public ExpDesignResult {
+}
+```
+
+```c++
+struct ExpDesignResult1 : public ExpDesignResult {
+}
+```
+
+```c++
+/// @brief 试验设计参数计算结果 作为试验设计的输出参数
+/// @brief as the output parameter of the experiment design
+/// 轴向对称拉伸试验设计结果
+/// Axially symmetrical tensile test design result
+struct ExpDesignResultAxially : public ExpDesignResult1 { }
+```
+
+```c++
+/// @brief 试验设计参数计算结果 作为试验设计的输出参数
+/// @brief as the output parameter of the experiment design
+/// 可调应力试验设计结果
+/// Adjustable stress test design result
+struct ExpDesignResultStressesAdjustable : public ExpDesignResult1 {}
+```
+
+```c++
+/// @brief 试验设计参数计算结果 作为试验设计的输出参数
+/// @brief as the output parameter of the experiment design
+/// 三点弯曲试验设计结果
+/// Three-point bending test design result
+struct ExpDesignResultTh3pointBending : public ExpDesignResult1 {
+}
+```
+
+```c++
+/// @brief 试验设计参数计算结果 作为试验设计的输出参数
+/// @brief as the output parameter of the experiment design
+/// 振动弯曲试验设计结果
+/// Vibration bending test design result
+struct ExpDesignResultVibrationBending : public ExpDesignResult1 {
+}
+```
+
+### 1.4.3 静载机设备控制模块
+
+接口定义：
+
+```c++
+struct stload_api {
+    int32_t (*open)();
+    int32_t (*close)();
+    int32_t (*setDisplacement)();
+    int32_t (*setForce)();
+    int32_t (*setHoldForce)();
+};
+```
+
+#### 2.4.4 超声波发生器设备控制模块
+
+接口定义：
+
+```c++
+class UltraDevice : public DeviceNode {
+public:
+    explicit UltraDevice(DeviceComInterface* com_port_device);
+
+public:
+    int32_t Open();
+    void Close();
+    void StartUltra();
+    void StopUltra();
+    void SetUltraMode();
+    void SetUltraPower();
+    void SetUltraFrequency();
+};
+```
+
+#### 2.4.5 试验数据存储查询模块
+
+接口定义：
+
+```c++
+class ExpDataStorage {
+public:
+    virtual int32_t Open(const char* url) = 0;
+    virtual void Query() = 0;
+    virtual void Close() = 0;
+};
+```
+
+```c++
+class ExpDataStorageImpl : public ExpDataStorage {
+public:
+    int32_t Open(const char* url) override;
+    void Query() override;
+    void Close() override;
+};
+```
+
+## 1.5 架构设计
 
 软件的总体架构设计如下：
 
@@ -36,22 +470,25 @@
 - 试验设计组件：用于试验设计的组件。
 
   主要包括:
-
+  
   试验设计界面，振幅校准用于试验设计算法。
+
 - 试验执行组件：用于试验执行的组件。
 
   主要包括：
-
+  
   视图组件：数据采集图表，数据采集表格，试验参数设置界面，试验执行界面。
-
+  
   控制组件：试验开始，试验暂停，试验继续，试验停止。
-
+  
   数据处理组件：试验数据处理展现。
+
 - 静载机测试组件：用于静载机测试的组件。
 
   主要包括:
-
+  
   静载机测试界面，静载机测试数据采集。
+
 - 串口通信组件：用于串口通信的组件。
 
   主要包括：
@@ -59,33 +496,38 @@
   静载机： 通信地址配置，静载机通信打开，静载机通信读写，静载机通信关闭。
 
   2000C：  超声波发生器通信地址配置，2000C超声波发生器通信打开，2000C超声波发生器通信读写，2000C超声波发生器通信关闭。
+
 - 网络通信组件：用于网络通信的组件。
 
   主要包括：
 
   静载机2.0：  静载机通信地址配置，静载机通信打开，静载机通信读写，静载机通信关闭。
+
 - 数据库组件：用于数据库操作的组件。用于试验数据的存储和查询。用于试验数据报表的生成。
 
   主要包括：
 
   数据库连接，数据库操作，数据库查询，数据库存储。
+
 - 日志组件：用于日志记录的组件。用户不可见，软件运行时记录日志。
 
   主要包括：
 
   日志记录，日志查询，日志存储。用于软件的操作日志和异常日志的记录。
+
 - 异常处理组件：用于异常处理的组件。用户不可见，软件运行时记录异常。
 
   主要包括：
 
   异常捕获，异常处理，异常记录。用于软件的异常情况的处理。
+
 - 试验报告生成组件：用于试验报告生成的组件。试验报告模板，试验报告生成。
 
   主要包括：
 
   试验报告模板，试验报告生成，试验报告导出，试验报告程序todocx。
 
-### 2.3 架构设计原则
+### 1.5.1 架构设计原则
 
 软件的设计应该遵循以下原则：
 采用 MVC 设计模式，将软件的功能分为 Model（数据模型）、View（视图）、Controller（接口控制） 三个部分，实现功能的分离和解耦。
@@ -95,7 +537,7 @@
 - 可维护：软件的代码应该易于维护，代码的可读性和可维护性应该高。
 - 可测试：软件的功能应该易于测试，测试用例应该覆盖所有的功能模块。
 
-### 2.4 架构框架
+### 1.5.2 架构框架
 
 示意图如下：
 
@@ -117,19 +559,20 @@ graph TD
     E --> M[试验报告生成组件]
 ```
 
-## 3. 模块设计
+## 2. 模块设计
 
-### 3.1 试验设计模块
+### 2.1 试验设计模块
 
 试验设计模块的功能、接口和内部结构。
 
-#### 3.1.1 数据结构模型接口定义
+#### 2.1.1 数据结构模型接口定义
 
 三点弯曲疲劳试验为例，试验设计模块的功能如下：
 
 输入：
 
 1. 材料基础信息，设计参数。
+
 2. 振幅校准数据，拟合振幅和功率值线性关系。
 
 算法：
@@ -182,95 +625,18 @@ graph TD
     G --> H[试验执行2000C超声波发生器的试验参数设置]
 ```
 
-模块接口设计如下：
-
-试验设计头信息：
-
-1. 针对输入材料基础信息接口设计如下：
-
-```cpp
-struct ExpDesignHeader {
-
-  // @brief 试验设计类型 @see kSolutionName_Axially_Symmetrical ...etc
-  // @brief The exp design type @see kSolutionName_Axially_Symmetrical ...etc
-  int32_t solution_type_;
-  // @brief 试验设计版本
-  // @brief The exp design version
-  int32_t version_;
-  // @brief 试验设计名称
-  // @brief The exp design name
-  uint8_t name_[256];
-  // @brief 试验设计日期 NTP时间戳
-  // @brief The exp design date NTP timestamp
-  int64_t date_;
-  // @brief 试验设计版权
-  // @brief The exp design copy right
-  uint8_t copy_right_[256];
-}
-```
-
-试验设计基础参数：
-
-```cpp
-struct ExpDesignBaseParam {
-
-   // @brief 材料名称
-  // @brief The material name
-  uint8_t material_name_[256];
-  // @breif 弹性模量 GPa 1GPa=1000MPa
-  // @brief The elastic modulus GPa 1GPa=1000MPa
-  double f_elastic_modulus_GPa_;
-  // @brief 密度 kg/m^3
-  // @brief The density kg/m^3
-  double f_density_kg_m3_;
-  // @brief 应力最大值 MPa
-  // @brief The max stress MPa
-  double f_max_stress_MPa_;
-  // @brief 应力比
-  // @brief The stress ratio
-  double f_stress_ratio_;
-}
-```
-
-轴向对称拉压疲劳试验设计参数：
-
-```cpp
-struct ExpDesignParamAxially : public ExpDesignBaseParam{
-
-}
-```
-
-可调应力比轴向拉压疲劳试验设计参数：
-
-```cpp
-struct ExpDesignParamAxiallyAdjustable : public ExpDesignBaseParam{
-
-}
-```
-
-三点应力疲劳试验设计参数：
-
-```cpp
-struct ExpDesignParamTh3pointBending : public ExpDesignBaseParam{
-
-}
-```
-
-振动弯曲疲劳试验设计参数：
-
-```cpp
-struct ExpDesignParamBendingVibration : public ExpDesignBaseParam{
-
-}
-```
-
 振幅校准数据接口设计如下：
 
 - 振幅校准数据拟合线性函数：y = kx + b，其中 **y 为功率值，x 为振幅值**。
+
 - **y 功率值用于超声波发生器的功率输出，x 振幅值用于超声波发生器的振幅控制**。
+
 - 拟合函数采用最小二乘法，拟合结果为振幅和功率值的线性关系。
 
-拟合函数采用C实现，接口设计如下：
+- 拟合结果用于试验设计算法的振幅和功率值的推导。
+
+- 试验设计算法接口定义
+
 
 ```cpp
 // @brief 振幅校准拟合函数
@@ -283,7 +649,7 @@ struct ExpDesignParamBendingVibration : public ExpDesignBaseParam{
 void LineFit(float x[], float y[], int n, float* a, float* b);
 ```
 
-#### 3.1.2 试验设计存储方式
+#### 2.1.2 试验设计存储方式
 
 试验设计存储方式以xml格式存储，试验设计头信息，试验设计基础参数，试验设计结果等信息存储。
 
@@ -414,7 +780,9 @@ void LineFit(float x[], float y[], int n, float* a, float* b);
 
 ```
 
-### 3.2 试验执行模块
+### 2.2 试验执行模块
+
+试验执行模块
 
 试验执行模块的功能、接口和内部结构。
 
@@ -449,6 +817,7 @@ graph TD
     E --> S[试验报告生成]
 ```
 
+
 #### 3.2.1 设备准备
 
 设备准备接口设计实现原则：
@@ -467,316 +836,6 @@ graph TD
     A --> D[设备超声波发生器辅助方法类]
     B --> E[串口通信接口类]
     B --> F[网络通信接口类]
-```
-
-设备对象接口类设计如下：
-
-```cpp
-class DeviceNode {};
-
-class DeviceComListener;
-class DeviceComInterface {
- public:
-  /// @brief  Add listener
-  /// @param listener  listener
-  virtual void AddListener(DeviceComListener* listener) = 0;
-  /// @brief  Remove listener
-  /// @param listener  listener
-  virtual void RemoveListener(DeviceComListener* listener) = 0;
-
- public:
-  virtual void AttachDeviceNode(DeviceNode* device) { device_ = device; }
-  virtual void DetachDeviceNode(DeviceNode*) { device_ = nullptr; }
-  virtual DeviceNode* Device() { return device_; }
-
- private:
-  DeviceNode* device_;
-
- public:
-  /// @brief  Open the device com
-  /// @return int32_t 0 success, non-zero fail
-  virtual int32_t Open(const ComPortDevice& com_port) = 0;
-  /// @brief  Check the device com is opened
-  /// @return bool true opened, false not opened
-  virtual bool isOpened() = 0;
-  /// @brief  Close the device com
-  virtual void Close() = 0;
-  /// @brief  Read data from the device com
-  /// @param buffer  data buffer
-  /// @param size  data buffer size
-  /// @return int32_t  read data size
-  virtual int32_t Read(uint8_t* buffer, int32_t size) = 0;
-  /// @brief  Write data to the device com
-  /// @param buffer  data buffer
-  /// @param size  data buffer size
-  /// @return int32_t  write data size
-  virtual int32_t Write(const uint8_t* buffer, int32_t size) = 0;
-  /// @brief  Write data to the device com and read data from the device com
-  /// @param write_buffer  write data buffer
-  /// @param write_size  write data buffer size
-  /// @param read_buffer  read data buffer
-  /// @param read_size  read data buffer size
-  /// @return int32_t  read data size
-  virtual int32_t WriteRead(const uint8_t* write_buffer,
-                            int32_t write_size,
-                            uint8_t* read_buffer,
-                            int32_t read_size) = 0;
-};
-
-```
-
-静载机设备接口设计如下：
-
-```cpp
-// @brief 静载机设备接口定义
-// @brief The static load machine device interface definition
-
-struct stload_api {
-  /// @brief load hardware parameters
-  /// @param nMachineType the machine type
-  /// @return BOOL
-  LoadHareWareParameters load_hardware_parameters;
-  /// @brief get load sensors
-  /// @return the load sensors
-  GetLoadSensors get_load_sensors;
-  /// @brief get extensions
-  /// @return the extensions
-  GetExtensions get_extensions;
-  /// @brief get extend sensors
-  /// @return the extend sensors
-  GetExtendSensors get_extend_sensors;
-  /// @brief open device
-  /// @param uUnit the unit
-  /// @return BOOL
-  OpenDevice open_device;
-  /// @brief open device lan
-  /// @param IpAddress the ip address
-  /// @param nPort the port
-  /// @return BOOL
-  OpenDeviceLAN open_device_lan;
-  /// @brief close device
-  /// @return BOOL
-  CloseDevice close_device;
-  /// @brief on line the device
-  /// @param channelNo the channel no
-  /// @param nLoadIndex the load index
-  /// @param nExtensionIndex the extension index
-  /// @param nExtendIndex the extend index
-  /// @param rate the rate
-  /// @param MachineType the machine type
-  /// @param DTCType the dtc type
-  /// @param sensorPosition the sensor position
-  /// @param TestSpace the test space
-  /// @param dataBlockSize the data block size
-  /// @param isAE the is AE
-  /// @return BOOL
-  OnLine on_line;
-  /// @brief off line the device
-  /// @return BOOL
-  OffLine off_line;
-  /// @brief close the device
-  /// @return BOOL
-  EndRead end_read;
-  /// @brief before get sample
-  /// @return BOOL
-  BeforeGetSample before_get_sample;
-  /// @brief after get sample
-  /// @return BOOL
-  AfterGetSample after_get_sample;
-  /// @brief set the sector correction
-  /// @param channel the channel
-  /// @param corr the correction
-  /// @return BOOL
-  SetSectCorrA set_sect_corr_a;
-  /// @brief set the resolve
-  /// @param channel the channel
-  /// @param resolve the resolve
-  /// @param norinal the norinal
-  /// @return BOOL
-  SetResolve set_resolve;
-  /// @brief set the dest window
-  /// @param dest_wnd the dest window
-  /// @return BOOL
-  SetDestWnd set_dest_wnd;
-  /// @brief get the load
-  /// @return the load
-  GetLoad get_load;
-  /// @brief get the position
-  /// @return the position
-  GetPosi get_posi;
-  /// @brief get the extension
-  /// @return the extension
-  GetExtn get_extn;
-  /// @brief get the extension one
-  /// @return the extension one
-  GetExt1 get_ext1;
-  /// @brief get the test time
-  /// @return the test time
-  GetTestTime get_test_time;
-  /// @brief get the test status
-  /// @return the test status
-  GetTestStatus get_test_status;
-  /// @brief tare the load
-  /// @return BOOL
-  TareLoad tare_load;
-  /// @brief tare the position
-  /// @return BOOL
-  TarePosi tare_posi;
-  /// @brief tare the extension
-  /// @return BOOL
-  TareExtn tare_extn;
-  /// @brief tare the extension one
-  /// @return BOOL
-  TareExt1 tare_ext1;
-  /// @brief tare the test time
-  /// @return BOOL
-  TareTime tare_time;
-  /// @brief carry the pid
-  /// @param channel the channel
-  /// @param Kp the Kp
-  /// @param Ki the Ki
-  /// @param Kd the Kd
-  /// @return BOOL
-  CarryPID carry_pid;
-  /// @brief set the test dir
-  /// @param dir the dir
-  /// @return BOOL
-  SetTestDir set_test_dir;
-  /// @brief carry the 200
-  /// @param control the control
-  /// @param end the end
-  /// @param speed the speed
-  /// @param value the value
-  /// @param threshold the threshold
-  /// @param priority the priority
-  /// @param dir the dir
-  /// @param keepvalue the keep value
-  /// @param keepdatum the keep datum
-  /// @param TestModle the test modle
-  /// @return BOOL
-  Carry200 carry_200;
-  /// @brief carry the 210
-  /// @param lOpen the lOpen
-  /// @return BOOL
-  Carry210 carry_210;
-  /// @brief stop the run
-  /// @return BOOL
-  StopRun stop_run;
-};
-```
-
-2000C超声波发生器设备接口设计如下：
-
-```cpp
-// @brief 2000C超声波发生器设备接口定义
-// @brief The 2000C ultrasonic generator device interface definition
-class UltraDevice :  public DeviceNode {
-   /// @brief  Get port device interface
-  /// @return port device interface
-  DeviceComInterface* GetPortDevice();
-  /// @brief  Open device utrasonic
-  /// @param com_settings  com settings
-  /// @return success 0, failed -1
-  int32_t Open(const anx::device::ComSettings& com_settings);
-  /// @brief  Close device utrasonic
-  /// @return void
-  void Close();
-  /// @brief  Check device is open
-  /// @return true is open, false is close
-  bool isOpened();
-  /// @brief  Start ultra
-  /// send: 01 05 00 02 FF 00 2D FA
-  /// response: 01 05 00 02 FF 00 2D FA
-  /// @return success 0, failed -1
-  int32_t StartUltra();
-  /// @brief  Stop ultra
-  /// send: 01 05 00 02 00 00 8C 0A
-  /// response: 01 05 00 02 00 00 8C 0A
-  /// @return success 0, failed -1
-  int32_t StopUltra();
-  /// @brief  Check ultra is started
-  /// @return true is started, false is stoped
-  bool IsUltraStarted();
-  /// @brief  Get fault code
-  /// send: 01 04 00 02 00 01 90 0A
-  /// response: 01 04 02 00 00 B9 30
-  /// value is 0x0000 means no fault
-  /// @return fault code or 0 means no fault
-  int32_t GetFaultCode();
-  /// @brief  Get current freq
-  /// send: 01 04 00 01 00 01 60 0A
-  /// response: 01 04 02 4D 97 CD CE
-  /// value is 0x4D97 = 19863
-  int32_t GetCurrentFreq();
-  /// @brief  Get current power
-  /// send: 01 04 00 00 00 01 31 CA
-  /// response: 01 04 02 00 2A 38 EF
-  /// value is 0x002A = 42
-  /// @return current power or error < 0
-  int32_t GetCurrentPower();
-  /// @brief  Set ultra amplitude [20, 100]
-  /// send: 01 06 00 18 00 14 90 C2
-  /// receive: 01 06 00 18 00 14 90 C2
-  /// amplitude is 0x14 = 20
-  /// @param amplitude  [20, 100]
-  /// @return success 0, failed -1
-  int32_t SetAmplitude(int32_t amplitude);
-  /// @brief  Get ultra amplitude [20, 100]
-  /// send: 01 03 00 18 00 01 04 0D
-  /// receive: 01 03 02 00 14 B8 4B
-  /// amplitude is 0x14 = 20
-  /// @return amplitude [20, 100] or error < 0
-  int32_t GetAmplitude();
-  /// @brief  Set ultra work time [1, 999]
-  /// send: 01 06 00 19 00 C8 59 9B
-  /// receive: 01 06 00 19 00 C8 59 9B
-  /// value is 0xC8 = 200
-  /// send: 01 06 00 19 01 90 59 f1
-  /// response: 01 06 00 19 01 90 59 f1
-  /// time is 0x0190 = 400
-  /// send: 01 06 00 19 02 58 58 97
-  /// response: 01 06 00 19 02 58 58 97
-  /// time is 0x0258 = 600
-  /// @param time_sec  [1, 99]
-  /// @return success 0, failed -1
-  int32_t SetWedingTime(int32_t time_sec);
-  /// @brief  Get ultra Weding time [1, 999] mean [0.1,99.9]S
-  /// send: 01 03 00 19 00 01 55 CD
-  /// receive: 01 03 02 00 C8 59 9B
-  /// value is 0xC8 = 200
-  /// @return Weding time [1, 999] mean [0.1,99.9]S or error < 0
-  int32_t GetWedingTime();
-  /// @brief  Get max freq
-  /// send: 01 03 00 03 00 01 74 0A
-  /// receive: 01 03 02 50 14 84 4B
-  /// value: 0x5014 = 20404
-  /// @return max freq or error < 0
-  int32_t GetMaxFreq();
-  /// @brief  Get min freq
-  /// send: 01 03 00 04 00 01 C5 CB
-  /// response: 01 03 02 4B 00 8E B4
-  /// value: 0x4B00 = 19200
-  /// @return min freq or error < 0
-  int32_t GetMinFreq();
-  /// @brief  Get max power
-  /// send: 01 03 00 02 00 01 25 CA
-  /// receive: 01 03 02 05 DC BA 8D
-  /// value: 0x05DC = 1500
-  /// @return max power or error < 0
-  int32_t GetMaxPower();
-  /// @brief  Get freq at machine on
-  /// send: 01 03 00 00 00 01 84 0A
-  /// response: 01 03 02 4D 62 0C FD
-  /// value: 0x4D62 = 19810
-  /// @return freq at machine on or error < 0
-  int32_t GetFreqAtMachineOn();
-  /// @brief  Get soft time at machine on
-  /// send: 01 03 00 01 00 01 D5 CA
-  /// response: 01 03 02 00 64 B9 AF
-  /// value: 0x0064 = 100
-  int32_t GetSoftTimeAtMachineOn();
-
-}
 ```
 
 #### 3.2.2 试验准备
@@ -833,11 +892,11 @@ int32_t StaticAircraftDoMoveUp();
 静载机保载时序图如下：
 
 ```mermaid
-graph TD
-    A[位移控制] --> B[StaticAircraftDoMoveDown]
+graph LR
+    A[位移控制] --> |移动中|B[达到目标距离]
     B --> C[力控制]
-    C --> D[StaticAircraftDoMoveDown]
-    D --> E[时间控制]
+    C --> |力控中|D[到达目标力]
+    D --> |保载中|E[达到保载时长]
 ```
 
 2000C设备循环次数清零：
@@ -897,14 +956,13 @@ int32_t ExpStop();
 试验实施时序图如下：
 
 ```mermaid
-graph TD
-    A[试验开始] --> B[ExpStart]
-    B --> C[试验暂停]
-    C --> D[ExpPause]
-    D --> E[试验继续]
-    E --> F[ExpResume]
-    F --> G[试验停止]
-    G --> H[ExpStop]
+graph LR
+    A[开始] --> B[运行]
+    B --> Z[停止]
+    B --> D[暂停/继续]
+    D --> B
+    D --> Z
+    Z --> E[生成试验记录文件]
 ```
 
 #### 3.2.4 试验结束
@@ -938,12 +996,12 @@ int32_t ExpReportGenerate();
 试验结束时序图如下：
 
 ```mermaid
-graph TD
-    A[试验数据存储] --> B[ExpDataStore]
-    B --> C[试验报告生成]
+graph LR
+    A[试验数据读取] --> |格式转换|B[试验报告生成]
+    B -->|数据存储|C[试验数据存储]
 ```
 
-### 3.3 试验数据模块
+### 2.3 试验数据模块
 
 试验数据模块的功能、接口和内部结构。
 
@@ -956,7 +1014,7 @@ graph TD
 试验数据模块流程示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[试验数据存储] --> B[试验数据查询]
     B --> C[试验数据文件csv导出]
     C --> D[试验数据报告生成]
@@ -1006,13 +1064,13 @@ int32_t ExpReportGenerate(const string& data);
 试验数据存储结构示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[试验数据存储接口类] --> B[试验数据查询接口类]
     B --> C[试验数据csv导出接口类]
     C --> D[试验数据报告生成接口类]
 ```
 
-## 4. 软件文档数据存储
+### 2.4 软件文档数据存储
 
 软件的数据存储设计。
 
@@ -1025,7 +1083,7 @@ graph TD
 试件设计数据存储示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[试件设计数据加载] --> B[试件设计修改]
     B --> C[试件设计文件形式存储]
 ```
@@ -1033,7 +1091,7 @@ graph TD
 试验数据存储示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[试验数据存储] --试验开始--> B[试验数据数据采集sqlite存储]
     B --试验结束--> C[试验数据csv导出]
     B --试验结束--> D[试验数据xml导出]
@@ -1048,7 +1106,7 @@ graph TD
 - 数据库名称：anxi.db
 - 数据表：试验设计表，试验数据表，试验报告表。
 
-### 4.1 试验数据采样表
+### 2.5 试验数据采样表
 
 试验数据采样表设计如下：
 
@@ -1085,7 +1143,7 @@ CREATE TABLE exp_data_histogram (
 - μm：静载机位移。
 - date：数据采样时间。
 
-### 4.2 试验采样数据存储
+### 2.6 试验采样数据存储
 
 试验采样数据存储采用csv格式存储。以文件形式存储在本地磁盘中。
 
@@ -1131,7 +1189,7 @@ xml 试验信息文件模板如下：
  </ExperimentReport>
 ```
 
-### 4.3 试验报告 DOCX 数据存储
+### 2.7 试验报告 DOCX 数据存储
 
 试验报告 DOCX 数据存储采用docx格式存储。以文件形式存储在本地磁盘中。
 
