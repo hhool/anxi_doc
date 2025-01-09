@@ -2,13 +2,17 @@
 
 ## 1. 简介
 
-超高周疲劳试验控制系统架构说明书用于描述软件的总体架构设计，包括软件的功能模块、组件、接口、数据结构等内容，是软件设计的重要文档之一。
+超高周疲劳控制系统架构说明书用于描述软件的总体架构设计，包括软件的功能模块、组件、接口、数据结构等内容，是软件设计的重要文档之一。
 
 帮助开发人员理解软件的设计思路和实现方法，为软件的开发、测试和维护提供参考。
 
-软件源码地址：[https://wwww.github.com/hhool/anxi](https://www.github.com/hhool/anxi)
+软件源码地址：
 
-软件编译说明书：[https://github.com/hhool/anxi/blob/main/README.md](https://github.com/hhool/anxi/blob/main/README.md)
+[https://wwww.github.com/hhool/anxi](https://www.github.com/hhool/anxi)
+
+软件编译说明书：
+
+[https://github.com/hhool/anxi/blob/main/README.md](https://github.com/hhool/anxi/blob/main/README.md)
 
 ## 2. 系统架构
 
@@ -100,7 +104,7 @@
 示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[用户界面] --> B[试验设计模块]
     A --> C[试验执行模块]
     A --> D[静载机测试模块]
@@ -143,7 +147,7 @@ graph TD
 结构示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[试验设计界面] --> B[材料基础信息录入]
     A --> C[试验参数设置编辑]
     A --> D[试验振幅、频率等参数推导]
@@ -172,7 +176,7 @@ graph TD
 数据流示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[用户输入材料基础信息，设计参数] --> B[试验设计算法]
     B --> C[试验设计结果]
     A --> D[用户输入振幅校准数据]
@@ -428,7 +432,7 @@ void LineFit(float x[], float y[], int n, float* a, float* b);
 试验执行流程示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[试验执行界面] --> B[设备准备]
     A --> C[试验准备]
     A --> D[试验实施]
@@ -789,7 +793,7 @@ class UltraDevice :  public DeviceNode {
 试验准备结构示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[试验准备接口类] --> B[试验准备辅助方法类]
 ```
 
@@ -824,20 +828,25 @@ int32_t StaticAircraftDoMoveUp();
 
 静载机保载功能：
 
-结合三点弯曲疲劳试验说明如下：
+结合三点弯曲疲劳试验力保载流程如下：
 
-- 以位移控方式调用StaticAircraftDoMoveDown接近试样。
-- 以力控方式调用StaticAircraftDoMoveDown，达到目标保载力。
-- 以时间方式保载力保持一段时间，用于目标保载力保持时长。
+- 以位移控方式调用StaticAircraftDoMoveDown接近靠近试样。监测入口力阈值。
+- 达到入口力值，以力控方式调用StaticAircraftDoMoveDown，监控力值。
+- 达到目标保载力值，以时间方式保载力保持一段时间，用于目标保载力保持时长。
 
 静载机保载时序图如下：
 
 ```mermaid
-graph TD
-    A[位移控制] --> B[StaticAircraftDoMoveDown]
-    B --> C[力控制]
-    C --> D[StaticAircraftDoMoveDown]
-    D --> E[时间控制]
+graph LR
+    A[位移控制] -->B1{入口力值监测,用户停止, 系统异常?}
+    B1 --达到入口里--> C[力控制]
+    B1 --其他--> G
+    C --> D{目标保载力值监测，用户停止, 系统异常?}
+    D --达到力保持值--> E[力保持预设时长]
+    D --其他--> G
+    E --> F{达到预设时长，用户停止，系统异常?}
+    F --达到预设时长--> G[保载停止]
+    F --否--> G
 ```
 
 2000C设备循环次数清零：
@@ -866,7 +875,7 @@ int32_t UltraDeviceCycleNumberZero();
 试验实施结构示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[试验实施接口类] --> B[试验实施辅助方法类]
 ```
 
@@ -897,14 +906,13 @@ int32_t ExpStop();
 试验实施时序图如下：
 
 ```mermaid
-graph TD
-    A[试验开始] --> B[ExpStart]
-    B --> C[试验暂停]
-    C --> D[ExpPause]
-    D --> E[试验继续]
-    E --> F[ExpResume]
-    F --> G[试验停止]
-    G --> H[ExpStop]
+graph LR
+    A[试验开始] --ExpStart-->C[试验进行]
+    C --ExpStop--> G[试验停止]
+    C --ExpPause--> E[试验暂停]
+    E --ExpResume--> C[试验进行]
+    G --> H[试验停止] 
+    C --异常事件--> H[试验停止]
 ```
 
 #### 3.2.4 试验结束
@@ -917,7 +925,7 @@ graph TD
 试验结束结构示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[试验结束接口类] --> B[试验结束辅助方法类]
 ```
 
@@ -938,9 +946,11 @@ int32_t ExpReportGenerate();
 试验结束时序图如下：
 
 ```mermaid
-graph TD
-    A[试验数据存储] --> B[ExpDataStore]
-    B --> C[试验报告生成]
+graph LR
+    
+    A[试验结束] --正确--> AA[试验数据存储]
+    A --异常--> H[异常处理]
+    AA --> B[试验报告生成]
 ```
 
 ### 3.3 试验数据模块
@@ -956,7 +966,7 @@ graph TD
 试验数据模块流程示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[试验数据存储] --> B[试验数据查询]
     B --> C[试验数据文件csv导出]
     C --> D[试验数据报告生成]
@@ -1006,7 +1016,7 @@ int32_t ExpReportGenerate(const string& data);
 试验数据存储结构示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[试验数据存储接口类] --> B[试验数据查询接口类]
     B --> C[试验数据csv导出接口类]
     C --> D[试验数据报告生成接口类]
@@ -1025,7 +1035,7 @@ graph TD
 试件设计数据存储示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[试件设计数据加载] --> B[试件设计修改]
     B --> C[试件设计文件形式存储]
 ```
@@ -1033,7 +1043,7 @@ graph TD
 试验数据存储示意图如下：
 
 ```mermaid
-graph TD
+graph LR
     A[试验数据存储] --试验开始--> B[试验数据数据采集sqlite存储]
     B --试验结束--> C[试验数据csv导出]
     B --试验结束--> D[试验数据xml导出]
